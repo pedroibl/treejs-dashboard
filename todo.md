@@ -35,5 +35,13 @@
 - [x] Test dashboard statistics
 - [x] Test charts and visualizations
 - [x] Verify responsive design
-- [ ] Create checkpoint
-- [ ] Commit to GitHub main branch
+- [x] Create checkpoint
+- [x] Commit to GitHub main branch
+
+## Bug Fixes & New Features
+- [x] Add default starter categories on first login
+- [x] Add sample transactions across diverse categories for testing charts
+- [x] Implement dark mode toggle feature
+- [x] Improve onboarding flow for new users
+- [x] Add empty state guidance in transactions page
+- [x] Add empty state guidance in budgets page

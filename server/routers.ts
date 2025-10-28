@@ -129,6 +129,13 @@ export const appRouter = router({
         return getCategorySpending(ctx.user.id, new Date(input.startDate), new Date(input.endDate));
       }),
   }),
+
+  seed: router({
+    createSampleData: protectedProcedure.mutation(async ({ ctx }) => {
+      const { seedUserData } = await import("./seedData");
+      return seedUserData(ctx.user.id);
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,30 +1,49 @@
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, Sparkles } from "lucide-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { useMemo } from "react";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const currentMonth = useMemo(() => new Date(), []);
   const startDate = startOfMonth(currentMonth);
   const endDate = endOfMonth(currentMonth);
 
-  const { data: stats, isLoading: statsLoading } = trpc.dashboard.stats.useQuery({
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = trpc.dashboard.stats.useQuery({
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
   });
 
-  const { data: categorySpending, isLoading: categoryLoading } = trpc.dashboard.categorySpending.useQuery({
+  const { data: categorySpending, isLoading: categoryLoading, refetch: refetchCategorySpending } = trpc.dashboard.categorySpending.useQuery({
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
   });
 
-  const { data: recentTransactions, isLoading: transactionsLoading } = trpc.transactions.list.useQuery({
+  const { data: recentTransactions, isLoading: transactionsLoading, refetch: refetchTransactions } = trpc.transactions.list.useQuery({
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
   });
 
-  const { data: categories } = trpc.categories.list.useQuery();
+  const { data: categories, refetch: refetchCategories } = trpc.categories.list.useQuery();
+
+  const seedMutation = trpc.seed.createSampleData.useMutation({
+    onSuccess: (result) => {
+      if (result.seeded) {
+        toast.success(`Created ${result.categoriesCount} categories, ${result.transactionsCount} transactions, and ${result.budgetsCount} budgets!`);
+        refetchStats();
+        refetchCategorySpending();
+        refetchTransactions();
+        refetchCategories();
+      } else {
+        toast.info(result.message);
+      }
+    },
+    onError: (error) => {
+      toast.error("Failed to create sample data: " + error.message);
+    },
+  });
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -44,6 +63,8 @@ export default function Dashboard() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
   }, [categorySpending]);
+
+  const hasNoData = !statsLoading && !categoryLoading && categories?.length === 0;
 
   if (statsLoading || categoryLoading || transactionsLoading) {
     return (
@@ -70,6 +91,35 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Banner for New Users */}
+      {hasNoData && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Your Finance Dashboard! 🎉</h2>
+                <p className="text-gray-600 mb-4">
+                  Get started by creating sample categories and transactions to explore all features, or start fresh by creating your own categories.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => seedMutation.mutate()}
+                    disabled={seedMutation.isPending}
+                    size="lg"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {seedMutation.isPending ? "Creating..." : "Create Sample Data"}
+                  </Button>
+                  <Button variant="outline" size="lg" asChild>
+                    <a href="/categories">Create Categories Manually</a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
